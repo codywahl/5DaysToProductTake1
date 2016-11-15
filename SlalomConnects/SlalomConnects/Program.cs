@@ -23,11 +23,6 @@ namespace SlalomConnects
                 }
             } while (!menuInput.ToLower().Equals("n"));
 
-            foreach (var eventSeeker in _eventSeekers)
-            {
-                Console.WriteLine(eventSeeker.ToString());
-            }
-
             var eventItem = SeekerMatcher.FindSeekerMatch(_eventSeekers);
 
             if (eventItem == null)
@@ -37,8 +32,12 @@ namespace SlalomConnects
             else
             {
                 Console.WriteLine("Match Found!" + Environment.NewLine +
-                                  "Person 1: " + eventItem.Email1 + " Person 2:" + eventItem.Email2 + Environment.NewLine +
                                   "Meet on floor 15, near the shuffleboard, at " + eventItem.StartDate + " for " + eventItem.EventType + " until " + eventItem.EndDate);
+                Console.WriteLine("You'll be joining...");
+                foreach (var eventSeeker in eventItem.EventSeekers)
+                {
+                    Console.WriteLine(eventSeeker.ToString());
+                }
             }
 
             Console.ReadLine();
@@ -103,11 +102,18 @@ namespace SlalomConnects
 
     public class EventDetails
     {
-        public string Email1 { get; set; }
-        public string Email2 { get; set; }
+        public Guid EventId { get; set; }
+        public int MinimumGroupSize { get; set; }
+        public int MaximumGroupSize { get; set; }
+        public List<EventSeeker> EventSeekers { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public EventType EventType { get; set; }
+
+        public EventDetails()
+        {
+            EventSeekers = new List<EventSeeker>();
+        }
     }
 
     public enum EventType
@@ -183,14 +189,17 @@ namespace SlalomConnects
                         eventSeekers.Remove(eventSeeker1);
                         eventSeekers.Remove(eventSeeker2);
 
-                        return new EventDetails()
+                        var eventDetails = new EventDetails()
                         {
-                            Email1 = eventSeeker1.Email,
-                            Email2 = eventSeeker2.Email,
                             StartDate = possibleStartTime,
                             EndDate = possibleEndTime,
                             EventType = eventSeeker1.EventType
                         };
+
+                        eventDetails.EventSeekers.Add(eventSeeker1);
+                        eventDetails.EventSeekers.Add(eventSeeker2);
+
+                        return eventDetails;
                     }
                 }
             }
