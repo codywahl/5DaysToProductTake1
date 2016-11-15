@@ -34,9 +34,10 @@ namespace SlalomConnects
                 Console.WriteLine("Match Found!" + Environment.NewLine +
                                   "Meet on floor 15, near the shuffleboard, at " + eventItem.StartDate + " for " + eventItem.EventType + " until " + eventItem.EndDate);
                 Console.WriteLine("You'll be joining...");
+
                 foreach (var eventSeeker in eventItem.EventSeekers)
                 {
-                    Console.WriteLine(eventSeeker.ToString());
+                    Console.WriteLine(eventSeeker.Email);
                 }
             }
 
@@ -96,7 +97,7 @@ namespace SlalomConnects
 
         public override string ToString()
         {
-            return "Email: " + Email + " + Event Type: " + EventType + " StartTime: " + StartTime + " EndTime: " + EndTime;
+            return "Email: " + Email + " Event Type: " + EventType + " StartTime: " + StartTime + " EndTime: " + EndTime;
         }
     }
 
