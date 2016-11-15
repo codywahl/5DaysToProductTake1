@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 
 namespace SlalomConnects
 {
@@ -45,14 +44,31 @@ namespace SlalomConnects
 
         private static void AddEventSeeker()
         {
+            var newEventSeeker = new EventSeeker();
+
             Console.Write("Email: ");
-            var email = Console.ReadLine();
+            newEventSeeker.Email = Console.ReadLine();
+
+            var validEntry = false;
+
+            do
+            {
+                Console.Write("Event type? 1: lunch 2: coffee 3: pingpong : ");
+                var eventChoiceInput = Console.ReadLine();
+
+                if (string.Equals(eventChoiceInput, "1") || string.Equals(eventChoiceInput, "2") || string.Equals(eventChoiceInput, "3"))
+                {
+                    validEntry = true;
+                    newEventSeeker.EventType = (EventType)Convert.ToInt32(eventChoiceInput) - 1;
+                }
+            } while (!validEntry);
 
             Console.WriteLine("Date Format: DD/MM/YYYY HH:MM");
             Console.Write("What time can you start?: ");
             var startTimeInput = Console.ReadLine();
             DateTime startTime;
             DateTime.TryParse(startTimeInput, out startTime);
+            newEventSeeker.StartTime = startTime;
 #if DEBUG
             Console.WriteLine("DEBUG: (startTime) " + startTime + Environment.NewLine);
 #endif
@@ -61,16 +77,10 @@ namespace SlalomConnects
             var endTimeInput = Console.ReadLine();
             DateTime endTime;
             DateTime.TryParse(endTimeInput, out endTime);
+            newEventSeeker.EndTime = endTime;
 #if DEBUG
             Console.WriteLine("DEBUG: (endTime) " + endTime + Environment.NewLine);
 #endif
-
-            var newEventSeeker = new EventSeeker
-            {
-                Email = email,
-                StartTime = startTime,
-                EndTime = endTime
-            };
 
             _eventSeekers.Add(newEventSeeker);
         }
@@ -79,13 +89,21 @@ namespace SlalomConnects
     public class EventSeeker
     {
         public string Email { get; set; }
+        public EventType EventType;
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
 
         public override string ToString()
         {
-            return "Email: " + Email + " StartTime: " + StartTime + " EndTime: " + EndTime;
+            return "Email: " + Email + "Event Type: " + EventType + " StartTime: " + StartTime + " EndTime: " + EndTime;
         }
+    }
+
+    public enum EventType
+    {
+        Lunch,
+        Coffee,
+        PingPong
     }
 
     public static class SeekerMatcher
@@ -102,12 +120,37 @@ namespace SlalomConnects
                 foreach (var eventSeeker2 in eventSeekers)
                 {
                     if (eventSeeker1 == eventSeeker2) continue;
-                    
-                    var timesMatch = (
-                    eventSeeker1.StartTime >= eventSeeker2.StartTime && eventSeeker1.EndTime <= eventSeeker2.EndTime);
 
-                    if (timesMatch)
+                    if (eventSeeker1.EventType != eventSeeker2.EventType) continue;
+
+                    if (eventSeeker1.StartTime >= eventSeeker2.EndTime || eventSeeker1.EndTime <= eventSeeker2.StartTime) continue;
+
+                    DateTime possibleStartTime;
+
+                    if (eventSeeker1.StartTime >= eventSeeker2.StartTime)
                     {
+                        possibleStartTime = eventSeeker1.StartTime;
+                    }
+                    else
+                    {
+                        possibleStartTime = eventSeeker2.StartTime;
+                    }
+
+                    DateTime possibleEndTime;
+                    if (eventSeeker1.EndTime <= eventSeeker2.EndTime)
+                    {
+                        possibleEndTime = eventSeeker1.EndTime;
+                    }
+                    else
+                    {
+                        possibleEndTime = eventSeeker2.EndTime;
+                    }
+
+                    if (possibleStartTime.AddMinutes(30) <= possibleEndTime)
+                    {
+                        eventSeekers.Remove(eventSeeker1);
+                        eventSeekers.Remove(eventSeeker2);
+
                         return new Tuple<EventSeeker, EventSeeker>(eventSeeker1, eventSeeker2);
                     }
                 }
