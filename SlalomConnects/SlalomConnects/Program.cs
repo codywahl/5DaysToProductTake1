@@ -14,7 +14,7 @@ namespace SlalomConnects
 
             do
             {
-                Console.Write("Add a event seeker? Y/N: ");
+                Console.Write("Add an event seeker? Y/N: ");
                 menuInput = Console.ReadLine();
 
                 if (menuInput.ToLower().Equals("y"))
@@ -28,15 +28,17 @@ namespace SlalomConnects
                 Console.WriteLine(eventSeeker.ToString());
             }
 
-            var match = SeekerMatcher.FindSeekerMatch(_eventSeekers);
+            var eventItem = SeekerMatcher.FindSeekerMatch(_eventSeekers);
 
-            if (match == null)
+            if (eventItem == null)
             {
                 Console.WriteLine("No match found.");
             }
             else
             {
-                Console.WriteLine("Match Found! Person 1: " + match.Item1.Email + " Person 2:" + match.Item2.Email);
+                Console.WriteLine("Match Found!" + Environment.NewLine +
+                                  "Person 1: " + eventItem.Email1 + " Person 2:" + eventItem.Email2 + Environment.NewLine +
+                                  "Meet on floor 15, near the shuffleboard, at " + eventItem.StartDate + " for " + eventItem.EventType + " until " + eventItem.EndDate);
             }
 
             Console.ReadLine();
@@ -53,7 +55,7 @@ namespace SlalomConnects
 
             do
             {
-                Console.Write("Event type? 1: lunch 2: coffee 3: pingpong : ");
+                Console.Write("Event type? 1:Lunch 2:Coffee 3:PingPong : ");
                 var eventChoiceInput = Console.ReadLine();
 
                 if (string.Equals(eventChoiceInput, "1") || string.Equals(eventChoiceInput, "2") || string.Equals(eventChoiceInput, "3"))
@@ -95,8 +97,17 @@ namespace SlalomConnects
 
         public override string ToString()
         {
-            return "Email: " + Email + "Event Type: " + EventType + " StartTime: " + StartTime + " EndTime: " + EndTime;
+            return "Email: " + Email + " + Event Type: " + EventType + " StartTime: " + StartTime + " EndTime: " + EndTime;
         }
+    }
+
+    public class EventDetails
+    {
+        public string Email1 { get; set; }
+        public string Email2 { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public EventType EventType { get; set; }
     }
 
     public enum EventType
@@ -108,7 +119,11 @@ namespace SlalomConnects
 
     public static class SeekerMatcher
     {
-        public static Tuple<EventSeeker, EventSeeker> FindSeekerMatch(List<EventSeeker> eventSeekers)
+        private const int LunchBufferTime = 45;
+        private const int CoffeeBufferTime = 20;
+        private const int PingPongBufferTime = 15;
+
+        public static EventDetails FindSeekerMatch(List<EventSeeker> eventSeekers)
         {
             if (eventSeekers.Count < 2)
             {
@@ -119,14 +134,15 @@ namespace SlalomConnects
             {
                 foreach (var eventSeeker2 in eventSeekers)
                 {
+                    // Check easy disqualifying factors.
                     if (eventSeeker1 == eventSeeker2) continue;
 
                     if (eventSeeker1.EventType != eventSeeker2.EventType) continue;
 
                     if (eventSeeker1.StartTime >= eventSeeker2.EndTime || eventSeeker1.EndTime <= eventSeeker2.StartTime) continue;
 
+                    // Determine possible start time.
                     DateTime possibleStartTime;
-
                     if (eventSeeker1.StartTime >= eventSeeker2.StartTime)
                     {
                         possibleStartTime = eventSeeker1.StartTime;
@@ -136,6 +152,7 @@ namespace SlalomConnects
                         possibleStartTime = eventSeeker2.StartTime;
                     }
 
+                    // Determine possible end time.
                     DateTime possibleEndTime;
                     if (eventSeeker1.EndTime <= eventSeeker2.EndTime)
                     {
@@ -146,12 +163,34 @@ namespace SlalomConnects
                         possibleEndTime = eventSeeker2.EndTime;
                     }
 
-                    if (possibleStartTime.AddMinutes(30) <= possibleEndTime)
+                    // Set Buffer based on event type
+                    var bufferTime = Int32.MaxValue;
+                    if (eventSeeker1.EventType == EventType.Lunch)
+                    {
+                        bufferTime = LunchBufferTime;
+                    }
+                    else if (eventSeeker1.EventType == EventType.Coffee)
+                    {
+                        bufferTime = CoffeeBufferTime;
+                    }
+                    else if (eventSeeker1.EventType == EventType.PingPong)
+                    {
+                        bufferTime = PingPongBufferTime;
+                    }
+
+                    if (possibleStartTime.AddMinutes(bufferTime) <= possibleEndTime)
                     {
                         eventSeekers.Remove(eventSeeker1);
                         eventSeekers.Remove(eventSeeker2);
 
-                        return new Tuple<EventSeeker, EventSeeker>(eventSeeker1, eventSeeker2);
+                        return new EventDetails()
+                        {
+                            Email1 = eventSeeker1.Email,
+                            Email2 = eventSeeker2.Email,
+                            StartDate = possibleStartTime,
+                            EndDate = possibleEndTime,
+                            EventType = eventSeeker1.EventType
+                        };
                     }
                 }
             }
